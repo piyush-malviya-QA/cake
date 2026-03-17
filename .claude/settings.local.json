@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Context7__resolve-library-id",
+      "Bash(mkdir -p _archive)",
+      "Bash(mv app.jsx _archive/app.jsx)",
+      "Bash(npx:*)",
+      "Bash(npm install:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
