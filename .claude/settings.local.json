@@ -10,7 +10,8 @@
       "Bash(timeout 15 npm run dev)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "bypassPermissions"
     ]
   }
 }
