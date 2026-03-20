@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import type { Category } from "@/types";
@@ -20,6 +20,11 @@ interface CategoryFormProps {
 export default function CategoryForm({ category, onSave, onCancel }: CategoryFormProps) {
   const [name, setName] = useState(category?.name || "");
   const [icon, setIcon] = useState(category?.icon || "🎂");
+
+  useEffect(() => {
+    setName(category?.name || "");
+    setIcon(category?.icon || "🎂");
+  }, [category]);
 
   function handleSave() {
     if (!name.trim()) return alert("Category name is required");

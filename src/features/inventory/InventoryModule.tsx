@@ -11,7 +11,7 @@ import CategoryForm from "./CategoryForm";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import { useAuthContext } from "@/features/auth/AuthProvider";
-import { fmt } from "@/lib/utils";
+import { fmt, uid } from "@/lib/utils";
 import type { Product, Category } from "@/types";
 
 export default function InventoryModule() {
@@ -66,7 +66,7 @@ export default function InventoryModule() {
       const existing = categories.find((c) => c.id === data.id)!;
       await updateCategory({ ...existing, ...data });
     } else {
-      await addCategory({ id: data.id || "", ...data });
+      await addCategory({ id: uid(), ...data });
     }
     setShowCategoryForm(false);
     setEditCategory(null);
