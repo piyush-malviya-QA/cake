@@ -1,10 +1,19 @@
 export type Role = "admin" | "cashier";
 
+export interface Shop {
+  id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  createdAt: string;
+}
+
 export interface Employee {
   id: string;
   name: string;
   email: string;
   role: Role;
+  shopId: string;
   createdAt: string;
 }
 
@@ -41,6 +50,7 @@ export interface OrderItem {
   productId: string | null;
   name: string;
   price: number;
+  buyPrice: number;
   qty: number;
 }
 

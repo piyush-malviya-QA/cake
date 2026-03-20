@@ -5,18 +5,22 @@ import {
   Package,
   FileText,
   Users,
+  UsersRound,
   ClipboardList,
+  BarChart2,
   Menu,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuthContext } from "@/features/auth/AuthProvider";
 import SyncIndicator from "./SyncIndicator";
+import { useSyncStatus } from "@/lib/sync/hooks";
 
 interface NavItem {
   id: string;
   label: string;
   href: string;
   icon: ReactNode;
+  adminOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -24,12 +28,15 @@ const navItems: NavItem[] = [
   { id: "inventory", label: "Inventory", href: "/inventory", icon: <Package size={20} /> },
   { id: "customers", label: "Customers", href: "/customers", icon: <Users size={20} /> },
   { id: "orders", label: "Order History", href: "/orders", icon: <ClipboardList size={20} /> },
+  { id: "insights", label: "Insights", href: "/insights", icon: <BarChart2 size={20} />, adminOnly: true },
+  { id: "team", label: "Team", href: "/team", icon: <UsersRound size={20} />, adminOnly: true },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { userName, role, logout } = useAuthContext();
+  const { userName, role, shopName, shopAddress, shopPhone, logout } = useAuthContext();
+  const { status, pending } = useSyncStatus();
   const [open, setOpen] = useState(false);
 
   return (
@@ -59,13 +66,18 @@ export default function Sidebar() {
           ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
-        <div className="px-5 pt-5 pb-5 border-b border-white/10">
-          <div className="text-[22px] font-extrabold">🎂 Sweet</div>
-          <div className="text-xs text-indigo-300 mt-0.5">Delights Bakery</div>
+        <div className="px-5 pt-5 pb-4 border-b border-white/10">
+          <div className="text-[22px] font-extrabold leading-tight">🎂 {shopName || "Cakeifyy"}</div>
+          {(shopAddress || shopPhone) && (
+            <div className="text-[10px] text-indigo-400 mt-1 leading-relaxed">
+              {shopAddress && <div>{shopAddress}</div>}
+              {shopPhone && <div>{shopPhone}</div>}
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 py-3">
-          {navItems.map((item) => {
+          {navItems.filter((item) => !item.adminOnly || role === "admin").map((item) => {
             const active = pathname.startsWith(item.href);
             return (
               <button
@@ -92,15 +104,15 @@ export default function Sidebar() {
 
         {/* User info & sync */}
         <div className="px-5 py-3 border-t border-white/10">
+          <SyncIndicator status={status} pendingCount={pending} />
           {userName && (
-            <div className="text-xs text-indigo-300 mb-2">
+            <div className="mt-2 text-xs text-indigo-300 font-medium">
               {userName} <span className="text-indigo-500">({role})</span>
             </div>
           )}
-          <SyncIndicator status="synced" />
           <button
             onClick={logout}
-            className="mt-3 text-xs text-indigo-400 hover:text-white bg-transparent border-none cursor-pointer"
+            className="mt-2 text-xs text-indigo-400 hover:text-white bg-transparent border-none cursor-pointer"
           >
             Sign out
           </button>

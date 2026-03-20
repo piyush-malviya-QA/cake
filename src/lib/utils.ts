@@ -12,13 +12,8 @@ export const today = () =>
     year: "numeric",
   });
 
-// Shop configuration (hardcoded for v1)
-export const SHOP_NAME = "Sweet Delights Bakery";
-export const SHOP_ADDRESS = "Shop Address Line 1";
-export const SHOP_PHONE = "+91-XXXXXXXXXX";
-
 // DB ↔ Frontend naming conversion
-export function snakeToCamel<T extends Record<string, unknown>>(
+export function snakeToCamel<T>(
   obj: Record<string, unknown>
 ): T {
   const result: Record<string, unknown> = {};

@@ -22,9 +22,9 @@ export default function SyncIndicator({
   const c = config[status];
 
   return (
-    <div className="flex items-center gap-2 text-[11px]">
-      <span className={`w-2 h-2 rounded-full ${c.dot}`} />
-      <span className={c.textColor}>{c.text}</span>
+    <div className="flex items-center gap-2 text-[11px]" suppressHydrationWarning>
+      <span className={`w-2 h-2 rounded-full ${c.dot}`} suppressHydrationWarning />
+      <span className={c.textColor} suppressHydrationWarning>{c.text}</span>
     </div>
   );
 }

@@ -14,6 +14,10 @@ interface AuthContext {
   userId: string | null;
   userName: string | null;
   role: Role | null;
+  shopId: string | null;
+  shopName: string | null;
+  shopAddress: string | null;
+  shopPhone: string | null;
   loading: boolean;
   logout: () => Promise<void>;
 }
@@ -22,6 +26,10 @@ const AuthCtx = createContext<AuthContext>({
   userId: null,
   userName: null,
   role: null,
+  shopId: null,
+  shopName: null,
+  shopAddress: null,
+  shopPhone: null,
   loading: true,
   logout: async () => {},
 });
@@ -34,6 +42,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [role, setRole] = useState<Role | null>(null);
+  const [shopId, setShopId] = useState<string | null>(null);
+  const [shopName, setShopName] = useState<string | null>(null);
+  const [shopAddress, setShopAddress] = useState<string | null>(null);
+  const [shopPhone, setShopPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -46,12 +58,17 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         setUserId(user.id);
         const { data } = await supabase
           .from("employees")
-          .select("name, role")
+          .select("name, role, shop_id, shops(name, address, phone)")
           .eq("id", user.id)
           .single();
         if (data) {
           setUserName(data.name);
           setRole(data.role as Role);
+          setShopId(data.shop_id);
+          const shop = data.shops as unknown as { name: string; address: string | null; phone: string | null } | null;
+          setShopName(shop?.name ?? null);
+          setShopAddress(shop?.address ?? null);
+          setShopPhone(shop?.phone ?? null);
         }
       }
       setLoading(false);
@@ -65,6 +82,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         setUserId(null);
         setUserName(null);
         setRole(null);
+        setShopId(null);
+        setShopName(null);
+        setShopAddress(null);
+        setShopPhone(null);
       }
     });
     return () => subscription.unsubscribe();
@@ -77,7 +98,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthCtx.Provider value={{ userId, userName, role, loading, logout }}>
+    <AuthCtx.Provider value={{ userId, userName, role, shopId, shopName, shopAddress, shopPhone, loading, logout }}>
       {children}
     </AuthCtx.Provider>
   );

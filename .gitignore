@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# supabase temp
+supabase/.temp/
+
+# claude/mcp config
+.mcp.json
+.claude/
+
+# archive
+_archive/
+
+# superpowers docs
+docs/superpowers/

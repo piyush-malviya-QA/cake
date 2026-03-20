@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import AuthProvider from "@/features/auth/AuthProvider";
+import DataProvider from "@/features/data/DataProvider";
 import Sidebar from "@/components/Sidebar";
 
 const pageLabels: Record<string, string> = {
@@ -9,6 +10,7 @@ const pageLabels: Record<string, string> = {
   "/inventory": "Inventory",
   "/customers": "Customers",
   "/orders": "Order History",
+  "/insights": "Insights",
 };
 
 export default function DashboardLayout({
@@ -25,6 +27,7 @@ export default function DashboardLayout({
 
   return (
     <AuthProvider>
+      <DataProvider>
       <div className="flex min-h-screen bg-slate-100">
         <Sidebar />
         <div className="flex-1 p-5 md:px-6 overflow-auto max-w-[1200px] mx-auto w-full">
@@ -37,6 +40,7 @@ export default function DashboardLayout({
           {children}
         </div>
       </div>
+      </DataProvider>
     </AuthProvider>
   );
 }
