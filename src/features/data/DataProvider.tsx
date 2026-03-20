@@ -294,7 +294,20 @@ export default function DataProvider({ children }: { children: ReactNode }) {
 
   async function addCategory(category: Omit<Category, "sortOrder">) {
     const maxSort = categories.reduce((m, c) => Math.max(m, c.sortOrder), -1);
-    const payload = camelToSnake({ ...category, sortOrder: maxSort + 1 } as unknown as Record<string, unknown>);
+    
+    // Ensure id is present
+    if (!category.id) {
+      console.error("Category ID is missing!");
+      return false;
+    }
+    
+    const payload = {
+      id: category.id,
+      name: category.name,
+      icon: category.icon,
+      sort_order: maxSort + 1,
+    };
+    console.log("addCategory payload:", payload);
     
     if (!isOnline) {
       await enqueue({ table: "categories", operation: "insert", payload, createdAt: now() });

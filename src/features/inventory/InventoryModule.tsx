@@ -63,10 +63,13 @@ export default function InventoryModule() {
 
   async function handleSaveCategory(data: { id?: string; name: string; icon: string }) {
     let success: boolean;
+    console.log("handleSaveCategory data:", data);
     if (data.id) {
       success = await updateCategory({ ...categories.find((c) => c.id === data.id)!, ...data });
     } else {
-      success = await addCategory({ id: uid(), ...data });
+      const newCategory = { id: uid(), name: data.name, icon: data.icon };
+      console.log("Creating new category:", newCategory);
+      success = await addCategory(newCategory);
     }
     if (!success) {
       alert("Failed to save category. Make sure you are logged in as an admin.");
