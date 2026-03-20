@@ -62,11 +62,15 @@ export default function InventoryModule() {
   }
 
   async function handleSaveCategory(data: { id?: string; name: string; icon: string }) {
+    let success: boolean;
     if (data.id) {
-      const existing = categories.find((c) => c.id === data.id)!;
-      await updateCategory({ ...existing, ...data });
+      success = await updateCategory({ ...categories.find((c) => c.id === data.id)!, ...data });
     } else {
-      await addCategory({ id: uid(), ...data });
+      success = await addCategory({ id: uid(), ...data });
+    }
+    if (!success) {
+      alert("Failed to save category. Make sure you are logged in as an admin.");
+      return;
     }
     setShowCategoryForm(false);
     setEditCategory(null);

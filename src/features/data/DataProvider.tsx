@@ -250,14 +250,21 @@ export default function DataProvider({ children }: { children: ReactNode }) {
 
   async function addCategory(category: Omit<Category, "sortOrder">) {
     const maxSort = categories.reduce((m, c) => Math.max(m, c.sortOrder), -1);
-    const { error } = await supabase
+    console.log("Adding category:", { ...category, sortOrder: maxSort + 1 });
+    const { data, error } = await supabase
       .from("categories")
-      .insert(camelToSnake({ ...category, sortOrder: maxSort + 1 } as unknown as Record<string, unknown>));
-    if (!error) {
-      await fetchCategories();
-      audit("created", "category", category.id, { name: category.name });
+      .insert(camelToSnake({ ...category, sortOrder: maxSort + 1 } as unknown as Record<string, unknown>))
+      .select();
+    console.log("Insert result:", { data, error });
+    if (error) {
+      console.error("Failed to add category:", error);
+      return false;
     }
-    return !error;
+    await fetchCategories();
+    if (data && data[0]) {
+      audit("created", "category", data[0].id, { name: category.name });
+    }
+    return true;
   }
 
   async function updateCategory(category: Category) {
