@@ -1,28 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderOpen } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import StatCard from "@/components/ui/StatCard";
 import SearchBar from "@/components/SearchBar";
 import ProductForm from "./ProductForm";
+import CategoryForm from "./CategoryForm";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import { useAuthContext } from "@/features/auth/AuthProvider";
 import { fmt } from "@/lib/utils";
-import type { Product } from "@/types";
+import type { Product, Category } from "@/types";
 
 export default function InventoryModule() {
   const { products, addProduct, updateProduct, deleteProduct } = useProducts();
-  const { categories } = useCategories();
+  const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
   const { role } = useAuthContext();
   const isAdmin = role === "admin";
 
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
   const [editProduct, setEditProduct] = useState<Product | null>(null);
-  const [showForm, setShowForm] = useState(false);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editCategory, setEditCategory] = useState<Category | null>(null);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
 
   const filtered = products.filter(
     (p) =>
@@ -34,7 +37,7 @@ export default function InventoryModule() {
   const totalValue = filtered.reduce((s, p) => s + p.sellPrice * p.qty, 0);
   const totalProfit = totalValue - totalInvestment;
 
-  async function handleSave(data: {
+  async function handleSaveProduct(data: {
     id?: string;
     name: string;
     catId: string;
@@ -48,13 +51,36 @@ export default function InventoryModule() {
     } else {
       await addProduct(data);
     }
-    setShowForm(false);
+    setShowProductForm(false);
     setEditProduct(null);
   }
 
-  async function handleDelete(id: string) {
+  async function handleDeleteProduct(id: string) {
     if (confirm("Delete this product?")) {
       await deleteProduct(id);
+    }
+  }
+
+  async function handleSaveCategory(data: { id?: string; name: string; icon: string }) {
+    if (data.id) {
+      const existing = categories.find((c) => c.id === data.id)!;
+      await updateCategory({ ...existing, ...data });
+    } else {
+      await addCategory({ id: data.id || "", ...data });
+    }
+    setShowCategoryForm(false);
+    setEditCategory(null);
+  }
+
+  async function handleDeleteCategory(id: string) {
+    const productsInCategory = products.filter((p) => p.catId === id);
+    if (productsInCategory.length > 0) {
+      alert(`Cannot delete category with ${productsInCategory.length} products. Please reassign or delete products first.`);
+      return;
+    }
+    if (confirm("Delete this category?")) {
+      await deleteCategory(id);
+      if (filterCat === id) setFilterCat("all");
     }
   }
 
@@ -92,9 +118,14 @@ export default function InventoryModule() {
           ))}
         </select>
         {isAdmin && (
-          <Button onClick={() => { setEditProduct(null); setShowForm(true); }}>
-            <Plus size={18} /> Add Product
-          </Button>
+          <>
+            <Button variant="ghost" onClick={() => { setEditCategory(null); setShowCategoryForm(true); }}>
+              <FolderOpen size={18} /> Manage Categories
+            </Button>
+            <Button onClick={() => { setEditProduct(null); setShowProductForm(true); }}>
+              <Plus size={18} /> Add Product
+            </Button>
+          </>
         )}
       </div>
 
@@ -156,13 +187,13 @@ export default function InventoryModule() {
                   {isAdmin && (
                     <td className="px-3.5 py-2.5 whitespace-nowrap">
                       <button
-                        onClick={() => { setEditProduct(p); setShowForm(true); }}
+                        onClick={() => { setEditProduct(p); setShowProductForm(true); }}
                         className="bg-transparent border-none cursor-pointer text-indigo-500 p-1 mr-1"
                       >
                         <Pencil size={16} />
                       </button>
                       <button
-                        onClick={() => handleDelete(p.id)}
+                        onClick={() => handleDeleteProduct(p.id)}
                         className="bg-transparent border-none cursor-pointer text-red-600 p-1"
                       >
                         <Trash2 size={16} />
@@ -186,18 +217,77 @@ export default function InventoryModule() {
         </table>
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Product Modal */}
       <Modal
-        open={showForm}
-        onClose={() => { setShowForm(false); setEditProduct(null); }}
+        open={showProductForm}
+        onClose={() => { setShowProductForm(false); setEditProduct(null); }}
         title={editProduct ? "Edit Product" : "Add Product"}
       >
         <ProductForm
           product={editProduct}
           categories={categories}
-          onSave={handleSave}
-          onCancel={() => { setShowForm(false); setEditProduct(null); }}
+          onSave={handleSaveProduct}
+          onCancel={() => { setShowProductForm(false); setEditProduct(null); }}
         />
+      </Modal>
+
+      {/* Manage Categories Modal */}
+      <Modal
+        open={showCategoryForm}
+        onClose={() => { setShowCategoryForm(false); setEditCategory(null); }}
+        title="Manage Categories"
+      >
+        <div className="space-y-3">
+          {/* Category List */}
+          <div className="max-h-[250px] overflow-y-auto border border-slate-200 rounded-lg">
+            {categories.length === 0 ? (
+              <div className="p-6 text-center text-slate-400 text-sm">
+                No categories yet. Add one below.
+              </div>
+            ) : (
+              categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 last:border-b-0 hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{cat.icon}</span>
+                    <span className="font-medium text-slate-700">{cat.name}</span>
+                    <span className="text-xs text-slate-400">
+                      ({products.filter((p) => p.catId === cat.id).length} items)
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => { setEditCategory(cat); setShowCategoryForm(true); }}
+                      className="bg-transparent border-none cursor-pointer text-indigo-500 p-1 hover:bg-indigo-50 rounded"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCategory(cat.id)}
+                      className="bg-transparent border-none cursor-pointer text-red-600 p-1 hover:bg-red-50 rounded"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Add/Edit Category Form */}
+          <div className="border-t border-slate-200 pt-3">
+            <h4 className="text-sm font-semibold text-slate-600 mb-2">
+              {editCategory ? "Edit Category" : "Add New Category"}
+            </h4>
+            <CategoryForm
+              category={editCategory}
+              onSave={handleSaveCategory}
+              onCancel={() => { setShowCategoryForm(false); setEditCategory(null); }}
+            />
+          </div>
+        </div>
       </Modal>
     </div>
   );
