@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { snakeToCamel, camelToSnake, uid, now } from "@/lib/utils";
 import { logAudit } from "@/lib/audit";
+import { enqueue } from "@/lib/sync/queue";
 import { useAuthContext } from "@/features/auth/AuthProvider";
 import type { Product, Category, Order, OrderItem, Customer, CartItem } from "@/types";
 
@@ -100,6 +101,28 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const supabase = createClient();
   const { userId, userName, shopId } = useAuthContext();
 
+  const isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
+
+  async function saveWithSync(table: string, operation: "insert" | "update" | "delete", payload: Record<string, unknown>) {
+    if (!isOnline) {
+      await enqueue({ table, operation, payload, createdAt: now() });
+      return { error: null };
+    }
+    
+    switch (operation) {
+      case "insert":
+        return await supabase.from(table).insert(payload);
+      case "update": {
+        const { id, ...rest } = payload;
+        return await supabase.from(table).update(rest).eq("id", id);
+      }
+      case "delete":
+        return await supabase.from(table).delete().eq("id", payload.id);
+      default:
+        return { error: { message: "Unknown operation" } };
+    }
+  }
+
   function audit(action: string, entity: string, entityId?: string, details?: Record<string, unknown>) {
     if (!userId || !userName || !shopId) return;
     logAudit(supabase, userId, userName, shopId, { action, entity, entityId, details });
@@ -188,6 +211,13 @@ export default function DataProvider({ children }: { children: ReactNode }) {
       createdAt: now(),
       updatedAt: now(),
     };
+    
+    if (!isOnline) {
+      await enqueue({ table: "products", operation: "insert", payload: camelToSnake(newProduct as unknown as Record<string, unknown>), createdAt: now() });
+      setProducts((prev) => [...prev, newProduct as Product]);
+      return true;
+    }
+
     const { error } = await supabase
       .from("products")
       .insert(camelToSnake(newProduct as unknown as Record<string, unknown>));
@@ -201,6 +231,13 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   async function updateProduct(product: Product) {
     const old = products.find((p) => p.id === product.id);
     const updated = { ...product, updatedAt: now() };
+    
+    if (!isOnline) {
+      await enqueue({ table: "products", operation: "update", payload: camelToSnake(updated as unknown as Record<string, unknown>), createdAt: now() });
+      setProducts((prev) => prev.map((p) => (p.id === product.id ? updated : p)));
+      return true;
+    }
+
     const { error } = await supabase
       .from("products")
       .update(camelToSnake(updated as unknown as Record<string, unknown>))
@@ -222,6 +259,13 @@ export default function DataProvider({ children }: { children: ReactNode }) {
 
   async function deleteProduct(id: string) {
     const product = products.find((p) => p.id === id);
+    
+    if (!isOnline) {
+      await enqueue({ table: "products", operation: "delete", payload: { id }, createdAt: now() });
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      return true;
+    }
+
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (!error) {
       setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -250,16 +294,24 @@ export default function DataProvider({ children }: { children: ReactNode }) {
 
   async function addCategory(category: Omit<Category, "sortOrder">) {
     const maxSort = categories.reduce((m, c) => Math.max(m, c.sortOrder), -1);
-    console.log("Adding category:", { ...category, sortOrder: maxSort + 1 });
+    const payload = camelToSnake({ ...category, sortOrder: maxSort + 1 } as unknown as Record<string, unknown>);
+    
+    if (!isOnline) {
+      await enqueue({ table: "categories", operation: "insert", payload, createdAt: now() });
+      await fetchCategories();
+      return true;
+    }
+
     const { data, error } = await supabase
       .from("categories")
-      .insert(camelToSnake({ ...category, sortOrder: maxSort + 1 } as unknown as Record<string, unknown>))
+      .insert(payload)
       .select();
-    console.log("Insert result:", { data, error });
+    
     if (error) {
       console.error("Failed to add category:", error);
       return false;
     }
+    
     await fetchCategories();
     if (data && data[0]) {
       audit("created", "category", data[0].id, { name: category.name });
@@ -268,6 +320,12 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   }
 
   async function updateCategory(category: Category) {
+    if (!isOnline) {
+      await enqueue({ table: "categories", operation: "update", payload: camelToSnake(category as unknown as Record<string, unknown>), createdAt: now() });
+      await fetchCategories();
+      return true;
+    }
+
     const { error } = await supabase
       .from("categories")
       .update(camelToSnake(category as unknown as Record<string, unknown>))
@@ -281,6 +339,13 @@ export default function DataProvider({ children }: { children: ReactNode }) {
 
   async function deleteCategory(id: string) {
     const cat = categories.find((c) => c.id === id);
+    
+    if (!isOnline) {
+      await enqueue({ table: "categories", operation: "delete", payload: { id }, createdAt: now() });
+      await fetchCategories();
+      return true;
+    }
+
     const { error } = await supabase.from("categories").delete().eq("id", id);
     if (!error) {
       await fetchCategories();
@@ -369,6 +434,13 @@ export default function DataProvider({ children }: { children: ReactNode }) {
       createdAt: now(),
       updatedAt: now(),
     };
+    
+    if (!isOnline) {
+      await enqueue({ table: "customers", operation: "insert", payload: camelToSnake(newCustomer as unknown as Record<string, unknown>), createdAt: now() });
+      setCustomers((prev) => [...prev, newCustomer as Customer]);
+      return newCustomer.id;
+    }
+
     const { error } = await supabase
       .from("customers")
       .insert(camelToSnake(newCustomer as unknown as Record<string, unknown>));
@@ -382,6 +454,13 @@ export default function DataProvider({ children }: { children: ReactNode }) {
 
   async function updateCustomer(customer: Customer) {
     const updated = { ...customer, updatedAt: now() };
+    
+    if (!isOnline) {
+      await enqueue({ table: "customers", operation: "update", payload: camelToSnake(updated as unknown as Record<string, unknown>), createdAt: now() });
+      setCustomers((prev) => prev.map((c) => (c.id === customer.id ? updated : c)));
+      return true;
+    }
+
     const { error } = await supabase
       .from("customers")
       .update(camelToSnake(updated as unknown as Record<string, unknown>))
@@ -397,6 +476,13 @@ export default function DataProvider({ children }: { children: ReactNode }) {
 
   async function deleteCustomer(id: string) {
     const customer = customers.find((c) => c.id === id);
+    
+    if (!isOnline) {
+      await enqueue({ table: "customers", operation: "delete", payload: { id }, createdAt: now() });
+      setCustomers((prev) => prev.filter((c) => c.id !== id));
+      return true;
+    }
+
     const { error } = await supabase.from("customers").delete().eq("id", id);
     if (!error) {
       setCustomers((prev) => prev.filter((c) => c.id !== id));
