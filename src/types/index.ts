@@ -59,6 +59,7 @@ export interface Order {
   customerId: string | null;
   subtotal: number;
   discountAmt: number;
+  deliveryCharge: number;
   total: number;
   createdBy: string;
   createdAt: string;

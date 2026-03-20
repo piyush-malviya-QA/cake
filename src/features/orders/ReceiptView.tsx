@@ -33,6 +33,7 @@ export default function ReceiptView({ order, customers }: ReceiptViewProps) {
     text += `${"─".repeat(32)}\n`;
     text += `Subtotal: ${fmt(order.subtotal)}\n`;
     if (order.discountAmt > 0) text += `Discount: -${fmt(order.discountAmt)}\n`;
+    if (order.deliveryCharge > 0) text += `Delivery: +${fmt(order.deliveryCharge)}\n`;
     text += `TOTAL: ${fmt(order.total)}\n`;
     text += `${"─".repeat(32)}\nThank you! Visit again 🎂`;
     return text;
@@ -67,6 +68,7 @@ export default function ReceiptView({ order, customers }: ReceiptViewProps) {
         <div class="line"></div>
         <div class="row"><span>Subtotal</span><span>${fmt(order.subtotal)}</span></div>
         ${order.discountAmt > 0 ? `<div class="row"><span>Discount</span><span>-${fmt(order.discountAmt)}</span></div>` : ""}
+        ${order.deliveryCharge > 0 ? `<div class="row"><span>Delivery</span><span>+${fmt(order.deliveryCharge)}</span></div>` : ""}
         <div class="line"></div>
         <div class="row total-row"><span>TOTAL</span><span>${fmt(order.total)}</span></div>
         <div class="line"></div>
@@ -122,6 +124,12 @@ export default function ReceiptView({ order, customers }: ReceiptViewProps) {
           <div className="flex justify-between text-xs text-red-600">
             <span>Discount</span>
             <span>-{fmt(order.discountAmt)}</span>
+          </div>
+        )}
+        {order.deliveryCharge > 0 && (
+          <div className="flex justify-between text-xs text-blue-600">
+            <span>Delivery</span>
+            <span>+{fmt(order.deliveryCharge)}</span>
           </div>
         )}
         <div className="border-t-2 border-stone-900 my-2" />

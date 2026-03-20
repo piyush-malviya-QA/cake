@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Minus, Plus, Trash2, Search, UserCheck, UserPlus } from "lucide-react";
+import { Minus, Plus, Trash2, Search, UserCheck, UserPlus, Bike } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { fmt } from "@/lib/utils";
 import type { CartItem, Customer } from "@/types";
@@ -14,6 +14,7 @@ interface CartProps {
   onCheckout: (
     customerId: string | null,
     discountAmt: number,
+    deliveryCharge: number,
     newCustomer?: { name: string; phone: string }
   ) => void;
 }
@@ -27,6 +28,7 @@ export default function Cart({
 }: CartProps) {
   const [discount, setDiscount] = useState<string>("0");
   const [discountType, setDiscountType] = useState<"percent" | "flat">("percent");
+  const [deliveryCharge, setDeliveryCharge] = useState<string>("0");
   const [phone, setPhone] = useState("");
   const [newName, setNewName] = useState("");
 
@@ -42,19 +44,21 @@ export default function Cart({
     discountType === "percent"
       ? subtotal * (Number(discount) / 100)
       : Number(discount);
-  const total = Math.max(0, subtotal - discountAmt);
+  const deliveryAmt = Math.max(0, Number(deliveryCharge) || 0);
+  const total = Math.max(0, subtotal - discountAmt + deliveryAmt);
 
   function handleCheckout() {
     if (cart.length === 0) return alert("Cart is empty");
     if (isNewCustomer) {
-      onCheckout(null, discountAmt, {
+      onCheckout(null, discountAmt, deliveryAmt, {
         name: newName.trim() || "Customer",
         phone: phone.trim(),
       });
     } else {
-      onCheckout(matchedCustomer?.id ?? null, discountAmt);
+      onCheckout(matchedCustomer?.id ?? null, discountAmt, deliveryAmt);
     }
     setDiscount("0");
+    setDeliveryCharge("0");
     setPhone("");
     setNewName("");
   }
@@ -186,6 +190,25 @@ export default function Cart({
         </select>
       </div>
 
+      {/* Delivery Charge */}
+      <div className="flex gap-2 mb-2.5 items-end">
+        <div className="flex-1">
+          <label className="text-[11px] font-semibold text-slate-400 block mb-0.5">
+            DELIVERY CHARGE
+          </label>
+          <div className="relative">
+            <Bike size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="number"
+              value={deliveryCharge}
+              onChange={(e) => setDeliveryCharge(e.target.value)}
+              placeholder="0"
+              className="w-full pl-8 pr-2.5 py-2 border-[1.5px] border-slate-200 rounded-lg text-sm box-border"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Totals */}
       <div className="border-t-2 border-slate-200 pt-2.5 mb-3">
         <div className="flex justify-between text-[13px] text-slate-500 mb-1">
@@ -196,6 +219,12 @@ export default function Cart({
           <div className="flex justify-between text-[13px] text-red-600 mb-1">
             <span>Discount</span>
             <span>-{fmt(discountAmt)}</span>
+          </div>
+        )}
+        {deliveryAmt > 0 && (
+          <div className="flex justify-between text-[13px] text-blue-600 mb-1">
+            <span>Delivery</span>
+            <span>+{fmt(deliveryAmt)}</span>
           </div>
         )}
         <div className="flex justify-between text-lg font-extrabold text-slate-800">

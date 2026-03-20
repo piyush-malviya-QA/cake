@@ -50,6 +50,7 @@ create table customers (
 );
 
 create table orders (
+  delivery_charge numeric not null default 0,
   id text primary key,
   customer_id text references customers(id),
   subtotal numeric not null,

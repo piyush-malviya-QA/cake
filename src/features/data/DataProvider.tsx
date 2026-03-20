@@ -18,6 +18,7 @@ interface CreateOrderInput {
   items: CartItem[];
   subtotal: number;
   discountAmt: number;
+  deliveryCharge: number;
   total: number;
   customerId: string | null;
 }
@@ -295,6 +296,7 @@ export default function DataProvider({ children }: { children: ReactNode }) {
       customer_id: input.customerId,
       subtotal: input.subtotal,
       discount_amt: input.discountAmt,
+      delivery_charge: input.deliveryCharge,
       total: input.total,
       created_by: user.id,
       created_at: now(),
@@ -324,6 +326,7 @@ export default function DataProvider({ children }: { children: ReactNode }) {
       customerId: input.customerId,
       subtotal: input.subtotal,
       discountAmt: input.discountAmt,
+      deliveryCharge: input.deliveryCharge,
       total: input.total,
       createdBy: user.id,
       createdAt: orderData.created_at,

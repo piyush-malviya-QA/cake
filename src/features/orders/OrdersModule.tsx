@@ -52,6 +52,7 @@ export default function OrdersModule() {
 
   const totalRevenue = filtered.reduce((s, o) => s + o.total, 0);
   const totalDiscount = filtered.reduce((s, o) => s + o.discountAmt, 0);
+  const totalDeliveryCharge = filtered.reduce((s, o) => s + o.deliveryCharge, 0);
   const totalBuyCost = filtered.reduce(
     (s, o) => s + o.items.reduce((si, item) => si + item.buyPrice * item.qty, 0),
     0
@@ -82,6 +83,7 @@ export default function OrdersModule() {
         <StatCard label="Total Orders" value={filtered.length} color="#6366f1" />
         <StatCard label="Revenue" value={fmt(totalRevenue)} color="#059669" />
         <StatCard label="Discounts Given" value={fmt(totalDiscount)} color="#f59e0b" />
+        <StatCard label="Delivery Charges" value={fmt(totalDeliveryCharge)} color="#3b82f6" />
         <StatCard
           label="Buy Cost"
           value={allBuyPriceZero ? "—" : fmt(totalBuyCost)}
@@ -98,7 +100,7 @@ export default function OrdersModule() {
         <table className="w-full border-collapse text-[13px]">
           <thead>
             <tr className="bg-slate-50">
-              {["Order ID", "Date", "Customer", "Items", "Discount", "Total", "Actions"].map(
+              {["Order ID", "Date", "Customer", "Items", "Discount", "Delivery", "Total", "Actions"].map(
                 (h) => (
                   <th
                     key={h}
@@ -137,6 +139,13 @@ export default function OrdersModule() {
                   >
                     {o.discountAmt > 0 ? `-${fmt(o.discountAmt)}` : "—"}
                   </td>
+                  <td
+                    className={`px-3.5 py-2.5 ${
+                      o.deliveryCharge > 0 ? "text-blue-600" : "text-slate-400"
+                    }`}
+                  >
+                    {o.deliveryCharge > 0 ? `+${fmt(o.deliveryCharge)}` : "—"}
+                  </td>
                   <td className="px-3.5 py-2.5 font-bold text-emerald-600">
                     {fmt(o.total)}
                   </td>
@@ -158,13 +167,13 @@ export default function OrdersModule() {
                 </tr>
               );
             })}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-10 text-center text-slate-400">
-                  No orders this month
-                </td>
-              </tr>
-            )}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="p-10 text-center text-slate-400">
+                    No orders this month
+                  </td>
+                </tr>
+              )}
           </tbody>
         </table>
       </div>

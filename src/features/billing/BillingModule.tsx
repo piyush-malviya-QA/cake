@@ -75,10 +75,11 @@ export default function BillingModule() {
   async function handleCheckout(
     customerId: string | null,
     discountAmt: number,
+    deliveryCharge: number,
     newCustomer?: { name: string; phone: string }
   ) {
     const subtotal = cart.reduce((s, c) => s + c.price * c.qty, 0);
-    const total = Math.max(0, subtotal - discountAmt);
+    const total = Math.max(0, subtotal - discountAmt + deliveryCharge);
 
     // Atomic stock decrement — all or nothing
     const supabase = createClient();
@@ -113,6 +114,7 @@ export default function BillingModule() {
       items: cart,
       subtotal,
       discountAmt,
+      deliveryCharge,
       total,
       customerId: finalCustomerId,
     });
